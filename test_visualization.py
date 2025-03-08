@@ -9,7 +9,6 @@ import time
 
 from lidar_vru_detection import LiDARVRUDetector
 
-# Try to import Open3D for 3D visualization
 try:
     import open3d as o3d
     OPEN3D_AVAILABLE = True
