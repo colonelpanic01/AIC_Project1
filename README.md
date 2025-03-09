@@ -90,6 +90,98 @@ The rule-based detection uses height, width, and length constraints to identify 
 - **Cyclists**: Taller objects with moderate width and length
 - **Motorcycles**: Moderately tall objects with larger width and length
 
+VRU Stats determined from helper_config_rule.py:
+movable_object.pushable_pullable:
+  Width  - Min: 0.193, Max: 3.336
+  Length - Min: 0.223, Max: 7.02
+  Height - Min: 0.53, Max: 3.866
+human.pedestrian.adult:
+  Width  - Min: 0.282, Max: 1.505
+  Length - Min: 0.214, Max: 1.674
+  Height - Min: 0.585, Max: 2.744
+vehicle.car:
+  Width  - Min: 0.648, Max: 3.875
+  Length - Min: 2.016, Max: 11.519
+  Height - Min: 0.867, Max: 4.49
+vehicle.bus.rigid:
+  Width  - Min: 1.848, Max: 4.611
+  Length - Min: 5.15, Max: 17.918
+  Height - Min: 2.222, Max: 5.304
+vehicle.construction:
+  Width  - Min: 0.682, Max: 7.554
+  Length - Min: 1.222, Max: 17.005
+  Height - Min: 1.131, Max: 7.469
+vehicle.truck:
+  Width  - Min: 1.377, Max: 6.044
+  Length - Min: 2.314, Max: 20.643
+  Height - Min: 1.523, Max: 5.01
+vehicle.trailer:
+  Width  - Min: 0.838, Max: 4.965
+  Length - Min: 0.932, Max: 18.644
+  Height - Min: 0.824, Max: 5.178
+movable_object.trafficcone:
+  Width  - Min: 0.094, Max: 2.037
+  Length - Min: 0.091, Max: 2.012
+  Height - Min: 0.224, Max: 2.0
+vehicle.motorcycle:
+  Width  - Min: 0.351, Max: 1.816
+  Length - Min: 0.72, Max: 4.409
+  Height - Min: 0.791, Max: 2.02
+human.pedestrian.construction_worker:
+  Width  - Min: 0.345, Max: 1.971
+  Length - Min: 0.293, Max: 1.521
+  Height - Min: 0.293, Max: 2.573
+movable_object.barrier:
+  Width  - Min: 0.285, Max: 7.677
+  Length - Min: 0.11, Max: 3.022
+  Height - Min: 0.357, Max: 2.044
+human.pedestrian.child:
+  Width  - Min: 0.295, Max: 0.93
+  Length - Min: 0.268, Max: 0.995
+  Height - Min: 0.724, Max: 2.0
+movable_object.debris:
+  Width  - Min: 0.23, Max: 11.667
+  Length - Min: 0.162, Max: 7.597
+  Height - Min: 0.123, Max: 2.613
+vehicle.bicycle:
+  Width  - Min: 0.233, Max: 1.661
+  Length - Min: 0.454, Max: 3.04
+  Height - Min: 0.349, Max: 2.223
+static_object.bicycle_rack:
+  Width  - Min: 0.459, Max: 15.774
+  Length - Min: 1.04, Max: 16.168
+  Height - Min: 0.793, Max: 2.508
+animal:
+  Width  - Min: 0.193, Max: 0.672
+  Length - Min: 0.401, Max: 1.531
+  Height - Min: 0.291, Max: 0.96
+human.pedestrian.police_officer:
+  Width  - Min: 0.527, Max: 1.155
+  Length - Min: 0.451, Max: 1.024
+  Height - Min: 1.394, Max: 2.028
+human.pedestrian.stroller:
+  Width  - Min: 0.362, Max: 0.87
+  Length - Min: 0.418, Max: 1.753
+  Height - Min: 0.789, Max: 1.888
+vehicle.emergency.police:
+  Width  - Min: 1.706, Max: 2.328
+  Length - Min: 4.541, Max: 5.712
+  Height - Min: 1.483, Max: 2.243
+human.pedestrian.wheelchair:
+  Width  - Min: 0.496, Max: 0.876
+  Length - Min: 0.682, Max: 1.538
+  Height - Min: 1.229, Max: 1.532
+vehicle.bus.bendy:
+  Width  - Min: 2.459, Max: 5.113
+  Length - Min: 6.771, Max: 21.304
+  Height - Min: 2.245, Max: 3.926
+human.pedestrian.personal_mobility:
+  Width  - Min: 0.298, Max: 0.886
+  Length - Min: 0.494, Max: 2.239
+  Height - Min: 0.846, Max: 2.0
+
+
+
 ### Performance Optimization
 
 The system includes several optimizations for Jetson Nano deployment:
