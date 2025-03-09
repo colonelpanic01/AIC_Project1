@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
 import os
 import glob
@@ -78,7 +77,8 @@ def visualize_point_cloud(points, labels=None, max_points=10000):
             elif 'motorcycle' in label['type'].lower():
                 box.color = (0, 0, 1)  # Blue for motorcycles
             else:
-                box.color = (1, 1, 0)  # Yellow for others
+                # box.color = (1, 1, 0)  # Yellow for others
+                pass
                 
             vis.add_geometry(box)
     
@@ -155,6 +155,59 @@ def plot_lidar_2d(points, labels=None, xlim=(-20, 20), ylim=(-20, 20)):
     plt.axis('equal')
     plt.colorbar(label='Intensity')
     plt.show()
+
+def calculate_3d_iou(bbox1, bbox2):
+    """
+    Calculate IoU between two 3D bounding boxes
+    This is a simplified implementation that doesn't handle rotation perfectly
+    """
+    # Extract box parameters
+    center1 = np.array(bbox1[:3])
+    dim1 = np.array(bbox1[3:6])
+    yaw1 = bbox1[6]
+    
+    center2 = np.array(bbox2[:3])
+    dim2 = np.array(bbox2[3:6])
+    yaw2 = bbox2[6]
+    
+    # If yaw angles are very different, IoU will be low
+    if abs(yaw1 - yaw2) > np.pi/4 and abs(yaw1 - yaw2) < 7*np.pi/4:
+        return 0.0
+    
+    # Calculate min/max points for each box
+    half_dim1 = dim1 / 2
+    half_dim2 = dim2 / 2
+    
+    min1 = center1 - half_dim1
+    max1 = center1 + half_dim1
+    
+    min2 = center2 - half_dim2
+    max2 = center2 + half_dim2
+    
+    # Calculate intersection volume
+    intersection_min = np.maximum(min1, min2)
+    intersection_max = np.minimum(max1, max2)
+    
+    # Check if there is an intersection
+    if np.any(intersection_min > intersection_max):
+        return 0.0
+    
+    # Calculate volumes
+    intersection_dims = intersection_max - intersection_min
+    intersection_volume = np.prod(intersection_dims)
+    
+    volume1 = np.prod(dim1)
+    volume2 = np.prod(dim2)
+    
+    # Calculate IoU
+    union_volume = volume1 + volume2 - intersection_volume
+    
+    if union_volume == 0:
+        return 0.0
+    
+    iou = intersection_volume / union_volume
+    
+    return iou
 
 def evaluate_detections(gt_dir, pred_dir, iou_threshold=0.5):
     """
@@ -306,34 +359,38 @@ def evaluate_detections(gt_dir, pred_dir, iou_threshold=0.5):
         'class': class_results
     }
 
-def calculate_3d_iou(bbox1, bbox2):
-    """
-    Calculate IoU between two 3D bounding boxes
-    This is a simplified implementation that doesn't handle rotation perfectly
-    """
-    # Extract box parameters
-    center1 = np.array(bbox1[:3])
-    dim1 = np.array(bbox1[3:6])
-    yaw1 = bbox1[6]
+if __name__ == "__main__":
+    import argparse
     
-    center2 = np.array(bbox2[:3])
-    dim2 = np.array(bbox2[3:6])
-    yaw2 = bbox2[6]
+    parser = argparse.ArgumentParser(description='LiDAR VRU Visualization')
+    parser.add_argument('--scan_file', type=str, help='Path to LiDAR scan (.bin) file')
+    parser.add_argument('--label_file', type=str, help='Path to label (.txt) file')
+    parser.add_argument('--mode', type=str, default='3d', choices=['3d', '2d'], 
+                        help='Visualization mode: 3d or 2d')
+    parser.add_argument('--eval', action='store_true', help='Run evaluation')
+    parser.add_argument('--gt_dir', type=str, help='Ground truth directory')
+    parser.add_argument('--pred_dir', type=str, help='Prediction directory')
     
-    # If yaw angles are very different, IOU will be low
-    if abs(yaw1 - yaw2) > np.pi/4 and abs(yaw1 - yaw2) < 7*np.pi/4:
-        return 0.0
+    args = parser.parse_args()
     
-    # Calculate min/max points for each box
-    half_dim1 = dim1 / 2
-    half_dim2 = dim2 / 2
-    
-    min1 = center1 - half_dim1
-    max1 = center1 + half_dim1
-    
-    min2 = center2 - half_dim2
-    max2 = center2 + half_dim2
-    
-    # Calculate intersection volume
-    intersection_min = np.maximum(min1, min2)
-    intersection_max = np.minimum(max1, max2)
+    if args.eval:
+        if not args.gt_dir or not args.pred_dir:
+            parser.error("--eval requires --gt_dir and --pred_dir")
+        evaluate_detections(args.gt_dir, args.pred_dir)
+    else:
+        if not args.scan_file:
+            parser.error("--scan_file is required for visualization")
+            
+        # Load data
+        points = load_point_cloud(args.scan_file)
+        
+        # Load labels if provided
+        labels = None
+        if args.label_file:
+            labels = load_labels(args.label_file)
+            
+        # Visualize
+        if args.mode == '3d':
+            visualize_point_cloud(points, labels)
+        else:
+            plot_lidar_2d(points, labels)

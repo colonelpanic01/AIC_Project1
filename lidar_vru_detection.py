@@ -4,9 +4,7 @@ import glob
 import time
 import torch
 import torch.nn as nn
-import torch.optim as optim
 from sklearn.cluster import DBSCAN
-from pathlib import Path
 import argparse
 
 # Configuration parameters
@@ -364,17 +362,8 @@ def process_dataset(input_dir, output_dir, use_ml=False, model_path=None):
     print(f"Average processing time: {avg_time:.4f}s ({1/avg_time:.2f} Hz)")
 
 
-def train_model(data_dir, model_save_path, epochs=10, batch_size=32):
-    """
-    Train the ML model using labeled data
-    Note: This function is provided as a reference but would need to be
-    implemented based on your training data preparation
-    """
-    # This function is a placeholder and would need to be implemented
-    # based on how you prepare your training data
-    print("Training function is a placeholder - implement based on your data prep")
-
-
+# def train_model(data_dir, model_save_path, epochs=10, batch_size=32):
+#     return 
 def main():
     """Main entry point for the program"""
     parser = argparse.ArgumentParser(description='LiDAR VRU Detection')
@@ -390,7 +379,9 @@ def main():
     if args.mode == 'detect':
         process_dataset(args.input_dir, args.output_dir, args.use_ml, args.model_path)
     elif args.mode == 'train':
+        from train import train_model
         train_model(args.input_dir, args.model_path)
+        
 
 
 if __name__ == "__main__":
