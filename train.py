@@ -41,7 +41,7 @@ class LiDARVRUDataset(Dataset):
         
         for i, (scan_file, label_file) in enumerate(tqdm(zip(self.scan_files, self.label_files), total=len(self.scan_files))):
             # Only process a subset for faster development
-            if i > 100:  # Process first 1000 files
+            if i > 2000:  # Process first  files
                 break
                 
             # Load point cloud
@@ -90,7 +90,7 @@ class LiDARVRUDataset(Dataset):
         # Print class distribution
         classes, counts = np.unique(self.labels, return_counts=True)
         print("Class distribution:")
-        class_map = {0: "pedestrian", 1: "cyclist", 2: "motorcycle", 3: "other"}
+        class_map = {0: "pedestrian", 1: "cyclist", 2: "motorcycle"}
         for cls, count in zip(classes, counts):
             print(f"  {class_map[cls]}: {count} samples ({count/len(self.labels)*100:.2f}%)")
     
@@ -198,16 +198,33 @@ def train_model(data_dir, model_save_path, epochs=10, batch_size=32, lr=0.001):
     
     # Create model
     model = nn.Sequential(
+        # Input layer
         nn.Linear(input_dim, 128),
-        nn.ReLU(),
         nn.BatchNorm1d(128),
-        nn.Dropout(0.3),
-        nn.Linear(128, 64),
         nn.ReLU(),
+        nn.Dropout(0.2),
+        
+        # First hidden layer
+        nn.Linear(128, 256),
+        nn.BatchNorm1d(256),
+        nn.ReLU(),
+        nn.Dropout(0.3),
+        
+        # Second hidden layer
+        nn.Linear(256, 128),
+        nn.BatchNorm1d(128),
+        nn.ReLU(),
+        nn.Dropout(0.2),
+        
+        # Third hidden layer
+        nn.Linear(128, 64),
         nn.BatchNorm1d(64),
-        nn.Linear(64, 4)  # 4 classes: pedestrian, cyclist, motorcycle, other
+        nn.ReLU(),
+        
+        # Output layer - just 3 classes instead of 4
+        nn.Linear(64, 3)  # pedestrian, cyclist, motorcycle (removed "other")
     ).to(device)
-    
+
     # Define loss and optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)

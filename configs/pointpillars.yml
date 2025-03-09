@@ -1,0 +1,133 @@
+dataset:
+  name: LidarDataset
+  dataset_path: data
+  cache_dir: ./logs/cache
+  steps_per_epoch_train: 5000
+
+model:
+  name: PointPillars
+  ckpt_path: null  # Will be overridden by command line argument
+
+  batcher: "ignore"
+
+  point_cloud_range: [-80, -80, -5, 80, 80, 3.0]
+  classes: [
+    "human.pedestrian.adult",
+    "human.pedestrian.construction_worker",
+    "human.pedestrian.child",
+    "human.pedestrian.wheelchair", 
+    "human.pedestrian.personal_mobility",
+    "human.pedestrian.police_officer",
+    "human.pedestrian.stroller",
+    "vehicle.motorcycle",
+    "vehicle.bicycle"
+  ]
+
+  loss:
+    focal:
+      gamma: 2.0
+      alpha: 0.25
+      loss_weight: 1.0
+    smooth_l1:
+      beta: 0.11
+      loss_weight: 2.0
+    cross_entropy:
+      loss_weight: 0.2
+
+  voxelize:
+    max_num_points: 32  # Increased from 20 for better feature extraction
+    voxel_size: &vsize
+      [0.15, 0.15, 6]  # Modified for better granularity for VRU detection
+    max_voxels: [80000, 80000]  # Increased for dense point clouds
+
+  voxel_encoder:
+    in_channels: 4
+    feat_channels: [64, 128]  # Added another layer for better feature extraction
+    voxel_size: *vsize
+
+  scatter:
+    in_channels: 128  # Updated to match voxel_encoder output
+    output_shape: [1066, 1066]  # Adjusted based on voxel size and point cloud range
+
+  backbone:
+    in_channels: 128  # Updated to match scatter output
+    out_channels: [64, 128, 256]
+    layer_nums: [3, 5, 5]
+    layer_strides: [1, 2, 2]  # Reduced first stride for better small object detection
+
+  neck:
+    in_channels: [64, 128, 256]
+    out_channels: [128, 128, 128]
+    upsample_strides: [1, 2, 4]
+    use_conv_for_no_stride: true  # Changed to true for better feature integration
+
+  head:
+    in_channels: 384
+    feat_channels: 384
+    nms_pre: 1000
+    score_thr: 0.05
+    ranges: [
+      [-80, -80, -1.0715024, 80, 80, -1.0715024],
+      [-80, -80, -0.3033737, 80, 80, -0.3033737],
+      [-80, -80, -0.3519405, 80, 80, -0.3519405],
+      [-80, -80, -0.8871424, 80, 80, -0.8871424],
+      [-80, -80, -0.6276341, 80, 80, -0.6276341],
+      [-80, -80, -1.3220503, 80, 80, -1.3220503],
+      [-80, -80, -1.0709302, 80, 80, -1.0709302],
+      [-80, -80, -0.9122268, 80, 80, -0.9122268],
+      [-80, -80, -1.8012227, 80, 80, -1.8012227]
+    ]
+    sizes: [
+      [0.8935, 1.4455, 1.6645],  # human.pedestrian.adult
+      [1.158, 1.407, 1.433],     # human.pedestrian.construction_worker
+      [0.6125, 0.6315, 1.362],   # human.pedestrian.child
+      [0.686, 1.110, 1.381],     # human.pedestrian.wheelchair
+      [0.592, 1.3665, 1.423],    # human.pedestrian.personal_mobility
+      [0.841, 0.7375, 1.711],    # human.pedestrian.police_officer
+      [0.616, 1.0855, 1.3385],   # human.pedestrian.stroller
+      [1.084, 2.115, 1.905],     # vehicle.motorcycle
+      [0.947, 1.7475, 1.0365]    # vehicle.bicycle
+    ]
+    rotations: [0, 1.57]
+    iou_thr: [[0.3, 0.5, 0.7]]  # Added more IoU thresholds for better evaluation
+    dir_offset: 0.7854
+
+  augment:
+    PointShuffle: True
+    ObjectRangeFilter:
+      point_cloud_range: [-80, -80, -5, 80, 80, 3.0]
+    RandomFlip3D:
+      flip_ratio_bev_horizontal: 0.5
+    GlobalRotScaleTrans:
+      rot_range: [-0.78539816, 0.78539816]
+      scale_ratio_range: [0.95, 1.05]
+
+pipeline:
+  name: ObjectDetection
+  test_compute_metric: true
+  batch_size: 4  # Adjust based on available memory
+  val_batch_size: 2
+  test_batch_size: 1
+  save_ckpt_freq: 5
+  max_epoch: 150  # Increased for better convergence
+  val_freq: 2  # Validate every 2 epochs
+  main_log_dir: ./logs
+  train_sum_dir: train_log
+  grad_clip_norm: 2
+
+  optimizer:
+    lr: 0.001
+    betas: [0.95, 0.99]
+    weight_decay: 0.01
+    scheduler: CosineAnnealingLR
+    scheduler_params:
+      T_max: 150
+
+  # evaluation properties
+  overlaps: [0.5, 0.7]  # Added 0.5 IoU threshold for better evaluation of small objects
+  difficulties: [0]
+  summary:
+    record_for: ["loss", "accuracy", "precision", "recall"]
+    max_pts: null
+    use_reference: false
+    max_outputs: 10  # Increased for better visualization

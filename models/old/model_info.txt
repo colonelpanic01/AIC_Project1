@@ -1,0 +1,15 @@
+Model Summary:
+Accuracy: 0.4839
+F1 Score: 0.4790
+
+Per-Class Metrics:
+pedestrian: Precision=0.5000, Recall=0.5625, F1=0.5294
+cyclist: Precision=0.4615, Recall=0.4000, F1=0.4286
+
+Confusion Matrix:
+[9, 7]
+[9, 6]
+
+Class Distribution:
+motorcycle: 15 samples
+pedestrian: 16 samples

@@ -6,20 +6,81 @@ import torch
 import torch.nn as nn
 from sklearn.cluster import DBSCAN
 import argparse
+'''
+general VRU dimension details for testing, see the readme for more details :)
+PEDESTRIAN ranges for all pedestrians [min, max]:
+  total width range is [0.282, 1.971]
+  total length range is [0.214, 2.239]
+  total height range is []
+  adult:
+    - width range is [0.282, 1.505]
+    - length range is [0.214, 1.674]
+    - height range is [0.585, 2.744]
+  worker:
+    - width range is [0.345, 1.971]
+    - length range is [0.293, 1.521]
+    - height range is [0.293, 2.573]
+  child:
+    - width range is [0.295, 0.93]
+    - length range is [0.268, 0.995]
+    - height range is [0.724, 2.0]
+  wheelchair:
+    - width range is [0.496, 0.876]
+    - length range is [0.682, 1.538]
+    - height range is [1.229, 1.532]
+  pers mobility:
+    - width range is [0.298, 0.886]
+    - length range is [0.494, 2.239]
+    - height range is [0.846, 2.0]
+  officer:
+    - width range is [0.527, 1.155]
+    - length range is [0.451, 1.024]
+    - height range is [1.394, 2.028]
+  stroller:
+    - width range is [0.362, 0.87]
+    - length range is [0.418, 1.753]
+    - height range is [0.789, 1.888]
 
-# Configuration parameters (for first option, rule based approach if user selects. not being used for ML approach)
+MOTORCYCLE ranges [min, max]:
+    - width range is [0.351, 1.816]
+    - length range is [0.72, 4.409]
+    - height range is [0.791, 2.02]
+
+BICYCLE ranges [min, max]:
+    - width range is [0.233, 1.661]
+    - length range is [0.454, 3.04]
+    - height range is [0.349, 2.223]
+
+all width range [0.233, 1.971]
+all length range [0.214, 0.995]
+all height range [0.293, 2.744]
+
+'''
+# Configuration parameters
+# changes post test !!
 CONFIG = {
-    'voxel_size': [0.1, 0.1, 0.1],         # Size of voxels for voxelization
-    'point_cloud_range': [-50, -50, -5, 50, 50, 3],  # Range of point cloud to consider
-    'max_points_per_voxel': 32,             # Maximum number of points in a voxel
-    'max_voxels': 20000,                    # Maximum number of voxels
-    'pedestrian_height_range': [0.5, 2.0],  # Typical height range for pedestrians
-    'cyclist_height_range': [0.8, 2.3],     # Typical height range for cyclists
-    'min_points_threshold': 10,             # Minimum points to consider a cluster
-    'cluster_eps': 0.5,                     # DBSCAN epsilon parameter
-    'cluster_min_samples': 5,               # DBSCAN min_samples parameter
-    'ground_height_threshold': -1.5,        # Threshold for ground points
-    'intensity_threshold': 0.1,             # Minimum intensity to consider
+    'voxel_size': [0.05, 0.05, 0.05],  # changes this from [0.1,0.1,0.1,0.1] for finer voxel size so we have better resolution
+    'point_cloud_range': [-50, -50, -5, 50, 50, 3],  # range of point cloud to consider
+    'max_points_per_voxel': 64,  # maximum number of points in a voxel, increased from 32
+    'max_voxels': 40000,  # max number of voxels Doubled from 20000
+
+    'pedestrian_height_range': [0.585, 2.744],  # From human.pedestrian.adult
+    'pedestrian_width_range': [0.282, 1.505],
+    'pedestrian_length_range': [0.214, 1.674],
+    
+    'bicycle_height_range': [0.349, 2.223],  # From vehicle.bicycle
+    'bicycle_width_range': [0.233, 1.661],
+    'bicycle_length_range': [0.454, 3.04],
+    
+    'motorcycle_height_range': [0.791, 2.02],  # From vehicle.motorcycle
+    'motorcycle_width_range': [0.351, 1.816],
+    'motorcycle_length_range': [0.72, 4.409],
+    
+    'min_points_threshold': 15,  # minimum points to consider a cluster, increased from 10
+    'cluster_eps': 0.4,  # DBSCAN epislon parameter, reduced from 0.5 for finer clustering
+    'cluster_min_samples': 7,  # DBSCAN min_samples parameter, increased from 5
+    'ground_height_threshold': -1.5, # threshold for ground points
+    'intensity_threshold': 0.08,  # minimum intensity to consider, slightly lower to capture more points
 }
 
 class LiDARVRUDetector:
@@ -33,31 +94,48 @@ class LiDARVRUDetector:
         
     def _build_model(self):
         """
-        Build a lightweight neural network model for VRU detection
-        that can run on Jetson Nano.
+        lightweight neural network model for VRU detection that can run on Jetson Nano.
         """
+        # Assuming input feature size of 64
         model = nn.Sequential(
+            # Input layer
             nn.Linear(64, 128),
-            nn.ReLU(),
             nn.BatchNorm1d(128),
-            nn.Dropout(0.3),
-            nn.Linear(128, 64),
             nn.ReLU(),
+            nn.Dropout(0.2),
+            
+            # First hidden layer
+            nn.Linear(128, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            
+            # Second hidden layer
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            
+            # Third hidden layer
+            nn.Linear(128, 64),
             nn.BatchNorm1d(64),
-            nn.Linear(64, 3)  # 3 classes: pedestrian, cyclist, motorcycle
+            nn.ReLU(),
+            
+            # Output layer - 3 classes: pedestrian, cyclist, motorcycle
+            nn.Linear(64, 3)
         )
         return model.to(self.device)
-    
+
     def load_model(self, model_path):
-        """Load a pretrained model"""
+        """Load model weights from a file."""
         print(f"Loading model from {model_path}...")
-        # self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-        # self.model.eval()
-        # Correct way to load the state_dict from a file
-        checkpoint = torch.load(model_path, map_location=self.device)  # Pass file path here
-        self.model.load_state_dict(checkpoint)
-        print(f"Model loaded from {model_path}")
-        
+        checkpoint = torch.load(model_path, map_location=self.device)
+        try:
+            self.model.load_state_dict(checkpoint, strict=False)  # Allow partial loading
+            print("Model loaded successfully!")
+        except RuntimeError as e:
+            print(f"Error loading model: {e}")
+
     def load_point_cloud(self, bin_file):
         """
         Load point cloud data from binary file
@@ -136,25 +214,67 @@ class LiDARVRUDetector:
         center = np.mean(xyz, axis=0)
         dimensions = max_point - min_point
         
+        # Aspect ratios (important for class discrimination)
+        width_height_ratio = dimensions[0] / (dimensions[2] + 1e-6)
+        length_height_ratio = dimensions[1] / (dimensions[2] + 1e-6)
+        width_length_ratio = dimensions[0] / (dimensions[1] + 1e-6)
+        
         # Statistical features
         std_dev = np.std(xyz, axis=0)
-        intensity_mean = np.mean(cluster_points[:, 3])
-        intensity_std = np.std(cluster_points[:, 3])
+        intensity_values = cluster_points[:, 3]
+        intensity_mean = np.mean(intensity_values)
+        intensity_std = np.std(intensity_values)
+        intensity_min = np.min(intensity_values)
+        intensity_max = np.max(intensity_values)
+        
+        # Point distribution features
+        distance_to_center = np.linalg.norm(xyz - center, axis=1)
+        mean_distance = np.mean(distance_to_center)
+        std_distance = np.std(distance_to_center)
+        max_distance = np.max(distance_to_center)
+        
+        # Height distribution (useful for pedestrians vs vehicles)
+        height_percentiles = np.percentile(xyz[:, 2], [25, 50, 75])
+        
+        # Density features
+        volume = dimensions[0] * dimensions[1] * dimensions[2]
+        point_density = len(cluster_points) / (volume + 1e-6)
         
         # Shape features
         eigenvalues = self._compute_eigenvalues(xyz)
+        if len(eigenvalues) == 3 and np.sum(eigenvalues) > 0:
+            # Normalized eigenvalues for shape description
+            normalized_evals = eigenvalues / np.sum(eigenvalues)
+            # Linear, planar, and spherical features
+            linearity = (normalized_evals[0] - normalized_evals[1]) / (normalized_evals[0] + 1e-6)
+            planarity = (normalized_evals[1] - normalized_evals[2]) / (normalized_evals[0] + 1e-6)
+            sphericity = normalized_evals[2] / (normalized_evals[0] + 1e-6)
+            anisotropy = (normalized_evals[0] - normalized_evals[2]) / (normalized_evals[0] + 1e-6)
+        else:
+            linearity, planarity, sphericity, anisotropy = 0, 0, 0, 0
         
-        # Combine features
+        # Combine all features
         features = np.concatenate([
-            center,
-            dimensions,
-            std_dev,
-            [intensity_mean, intensity_std],
-            eigenvalues,
-            [len(cluster_points)]  # Number of points in cluster
-        ])
+            center,  # 3 features
+            dimensions,  # 3 features
+            [width_height_ratio, length_height_ratio, width_length_ratio],  # 3 features
+            std_dev,  # 3 features
+            [intensity_mean, intensity_std, intensity_min, intensity_max],  # 4 features
+            [mean_distance, std_distance, max_distance],  # 3 features
+            height_percentiles,  # 3 features
+            [point_density],  # 1 feature
+            eigenvalues,  # 3 features
+            [linearity, planarity, sphericity, anisotropy],  # 4 features
+            [len(cluster_points)]  # 1 feature - number of points
+        ])  # Total: 31 features
+        
+        # Pad to make 64 features if needed
+        if len(features) < 64:
+            padding = np.zeros(64 - len(features))
+            features = np.concatenate([features, padding])
         
         return features
+
     
     def _compute_eigenvalues(self, points):
         """Compute eigenvalues of the covariance matrix for shape analysis"""
@@ -169,11 +289,11 @@ class LiDARVRUDetector:
     
     def classify_cluster_rule_based(self, cluster_points, features):
         """
-        Rule-based classification of clusters into VRU types:
+        Rule-based classification using precise dimension ranges. clusters to VRU types:
         - pedestrian
         - cyclist
         - motorcycle
-        - other (non-VRU)
+        - other/non-vru
         """
         xyz = cluster_points[:, :3]
         min_point = np.min(xyz, axis=0)
@@ -182,29 +302,102 @@ class LiDARVRUDetector:
         width = max_point[0] - min_point[0]
         length = max_point[1] - min_point[1]
         
-        # Check if it's a pedestrian
-        if (height > self.config['pedestrian_height_range'][0] and
-            height < self.config['pedestrian_height_range'][1] and
-            width < 1.0 and length < 1.0):
-            return "pedestrian", 0.8  # confidence score
+        # Compute confidence scores for each class based on dimensions
+        pedestrian_score = 0
+        bicycle_score = 0
+        motorcycle_score = 0
+        
+        # Check pedestrian dimensions
+        if (height >= self.config['pedestrian_height_range'][0] and 
+            height <= self.config['pedestrian_height_range'][1] and
+            width >= self.config['pedestrian_width_range'][0] and
+            width <= self.config['pedestrian_width_range'][1] and
+            length >= self.config['pedestrian_length_range'][0] and
+            length <= self.config['pedestrian_length_range'][1]):
             
-        # Check if it's a cyclist
-        if (height > self.config['cyclist_height_range'][0] and
-            height < self.config['cyclist_height_range'][1] and
-            width < 2.0 and length < 2.0):
-            return "cyclist", 0.7
+            # Additional pedestrian characteristics
+            if len(cluster_points) < 100:  # Pedestrians typically have fewer points
+                pedestrian_score += 0.3
+                
+            # Eigenvalues for pedestrian (typically more vertical)
+            eigenvalues = self._compute_eigenvalues(xyz)
+            if len(eigenvalues) == 3 and eigenvalues[2] / (eigenvalues[0] + 1e-6) < 0.2:
+                pedestrian_score += 0.3
+                
+            # Height to width ratio for pedestrian
+            if height / (width + 1e-6) > 1.5:
+                pedestrian_score += 0.4
+                
+            pedestrian_score = min(1.0, pedestrian_score)
+        
+        # Check bicycle dimensions
+        if (height >= self.config['bicycle_height_range'][0] and 
+            height <= self.config['bicycle_height_range'][1] and
+            width >= self.config['bicycle_width_range'][0] and
+            width <= self.config['bicycle_width_range'][1] and
+            length >= self.config['bicycle_length_range'][0] and
+            length <= self.config['bicycle_length_range'][1]):
             
-        # Check if it's a motorcycle
-        if (height > 0.8 and height < 1.8 and
-            width < 1.5 and length < 2.5):
-            return "motorcycle", 0.6
+            # Bicycles typically have a distinctive length-to-width ratio
+            if length / (width + 1e-6) > 1.3:
+                bicycle_score += 0.4
+                
+            # Height distribution for bicycles
+            z_values = xyz[:, 2]
+            if np.std(z_values) < 0.5:  # Relatively flat height distribution
+                bicycle_score += 0.3
+                
+            # Intensity characteristics
+            intensity_values = cluster_points[:, 3]
+            if np.mean(intensity_values) > 0.2:  # Metal parts reflect more
+                bicycle_score += 0.3
+                
+            bicycle_score = min(1.0, bicycle_score)
+        
+        # Check motorcycle dimensions
+        if (height >= self.config['motorcycle_height_range'][0] and 
+            height <= self.config['motorcycle_height_range'][1] and
+            width >= self.config['motorcycle_width_range'][0] and
+            width <= self.config['motorcycle_width_range'][1] and
+            length >= self.config['motorcycle_length_range'][0] and
+            length <= self.config['motorcycle_length_range'][1]):
             
-        return "other", 0.5
+            # Motorcycles typically have more points
+            if len(cluster_points) > 80:
+                motorcycle_score += 0.3
+                
+            # Length-to-width ratio for motorcycles
+            if length / (width + 1e-6) > 1.8:
+                motorcycle_score += 0.4
+                
+            # Intensity characteristics
+            intensity_values = cluster_points[:, 3]
+            if np.mean(intensity_values) > 0.25:  # Metal parts reflect more
+                motorcycle_score += 0.3
+                
+            motorcycle_score = min(1.0, motorcycle_score)
+        
+        # Determine the highest scoring class
+        scores = {
+            "pedestrian": pedestrian_score,
+            "cyclist": bicycle_score,
+            "motorcycle": motorcycle_score
+        }
+        
+        best_class = max(scores.items(), key=lambda x: x[1])
+        
+        # Return best class if score is high enough, otherwise "other"
+        if best_class[1] > 0.5:
+            return best_class[0], best_class[1]
+        else:
+            return "other", 0.3
+
         
     def classify_cluster_ml(self, features):
         """
         ML-based classification of clusters
         """
+        self.model.eval()
         # Normalize features
         features = torch.FloatTensor(features).unsqueeze(0).to(self.device)
         
@@ -274,7 +467,9 @@ class LiDARVRUDetector:
         """
         # Load and preprocess point cloud
         points = self.load_point_cloud(point_cloud_file)
+        # print(f"Loaded point cloud with {len(points)} points")
         filtered_points = self.preprocess_point_cloud(points)
+        # print(f"Filtered point cloud with {len(filtered_points)} points")
         
         # Extract clusters
         clusters = self.extract_clusters(filtered_points)
@@ -287,6 +482,7 @@ class LiDARVRUDetector:
             
             # Classify cluster
             if use_ml and hasattr(self, 'model'):
+                self.model.eval()
                 cls_type, confidence = self.classify_cluster_ml(features)
             else:
                 cls_type, confidence = self.classify_cluster_rule_based(cluster_points, features)
@@ -336,7 +532,6 @@ def process_dataset(input_dir, output_dir, use_ml=False, model_path=None):
     
     # Get list of scan files
     scan_files = sorted(glob.glob(os.path.join(input_dir, 'scans', '*.bin')))
-    
     # Process each scan
     total_time = 0
     for i, scan_file in enumerate(scan_files):
@@ -371,11 +566,11 @@ def process_dataset(input_dir, output_dir, use_ml=False, model_path=None):
 def main():
     """Main entry point for the program"""
     parser = argparse.ArgumentParser(description='LiDAR VRU Detection')
-    parser.add_argument('--input_dir', type=str, required=True, help='Input directory containing scans and labels')
-    parser.add_argument('--output_dir', type=str, required=True, help='Output directory for results')
+    parser.add_argument('--input_dir', type=str, default='data', help='Input directory containing scans and labels')
+    parser.add_argument('--output_dir', type=str, default='results', help='Output directory for results')
     parser.add_argument('--mode', type=str, default='detect', choices=['detect', 'train'], 
                         help='Mode: detect or train')
-    parser.add_argument('--model_path', type=str, default=None, help='Path to model weights')
+    parser.add_argument('--model_path', default='models/model.pth', type=str, help='Path to model weights')
     parser.add_argument('--use_ml', action='store_true', help='Use ML-based approach')
     
     args = parser.parse_args()
@@ -385,8 +580,6 @@ def main():
     elif args.mode == 'train':
         from train import train_model
         train_model(args.input_dir, args.model_path)
-        
-
 
 if __name__ == "__main__":
     main()
