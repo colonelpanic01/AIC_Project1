@@ -7,7 +7,7 @@ import torch.nn as nn
 from sklearn.cluster import DBSCAN
 import argparse
 
-# Configuration parameters
+# Configuration parameters (for first option, rule based approach if user selects. not being used for ML approach)
 CONFIG = {
     'voxel_size': [0.1, 0.1, 0.1],         # Size of voxels for voxelization
     'point_cloud_range': [-50, -50, -5, 50, 50, 3],  # Range of point cloud to consider
@@ -50,8 +50,12 @@ class LiDARVRUDetector:
     
     def load_model(self, model_path):
         """Load a pretrained model"""
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
-        self.model.eval()
+        print(f"Loading model from {model_path}...")
+        # self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        # self.model.eval()
+        # Correct way to load the state_dict from a file
+        checkpoint = torch.load(model_path, map_location=self.device)  # Pass file path here
+        self.model.load_state_dict(checkpoint)
         print(f"Model loaded from {model_path}")
         
     def load_point_cloud(self, bin_file):
