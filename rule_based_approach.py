@@ -181,7 +181,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description="Rule-based VRU detection from LiDAR data")
-    parser.add_argument("--input_dir", type=str, default='data/scans', help="Directory containing LiDAR bin files")
+    parser.add_argument("--input_dir", type=str, default='scans', help="Directory containing LiDAR bin files")
     parser.add_argument("--output_dir", type=str, default='results', help="Directory to save detection results")
     
     args = parser.parse_args()
