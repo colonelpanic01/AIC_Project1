@@ -555,11 +555,6 @@ def process_dataset(input_dir, output_dir, use_ml=False, model_path=None):
         if (i + 1) % 100 == 0:
             print(f"Processed {i+1}/{len(scan_files)} scans. Avg time: {total_time / (i+1):.4f}s")
     
-    # Print statistics
-    avg_time = total_time / len(scan_files)
-    print(f"Processing complete! Processed {len(scan_files)} scans.")
-    print(f"Average processing time: {avg_time:.4f}s ({1/avg_time:.2f} Hz)")
-
 
 # def train_model(data_dir, model_save_path, epochs=10, batch_size=32):
 #     return 
@@ -570,7 +565,7 @@ def main():
     parser.add_argument('--output_dir', type=str, default='results', help='Output directory for results')
     parser.add_argument('--mode', type=str, default='detect', choices=['detect', 'train'], 
                         help='Mode: detect or train')
-    parser.add_argument('--model_path', default='models/model.pth', type=str, help='Path to model weights')
+    parser.add_argument('--model_path', default='models/pointpillars.pth', type=str, help='Path to model weights')
     parser.add_argument('--use_ml', action='store_true', help='Use ML-based approach')
     
     args = parser.parse_args()

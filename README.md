@@ -1,17 +1,19 @@
 # Western Engineering Automotive Innovation Challenge
-This repository contains a detection and tracking system for Vulnerable Road Users (VRUs) using LiDAR data. The system is optimized for deployment on a NVIDIA Jetson Nano.
+This repository contains a detection and tracking system for Vulnerable Road Users (VRUs) using LiDAR data. The system is to be deployed on a NVIDIA Jetson Nano, yet to be optimized it. 
+It is comprehensive implementation of a **LiDAR-based VRU (Vulnerable Road Users) detection system**, combining **rule-based** and **machine learning** approaches to detect pedestrians, cyclists, and motorcyclists from LiDAR point cloud data. Below is a detailed explanation of how the code works:
+
 
 ## Overview
 
-The system detects and tracks pedestrians, cyclists, and motorcyclists in LiDAR point cloud data. It processes raw LiDAR scans and outputs 3D bounding boxes for each detected VRU.
+The system detects and tracks pedestrians, cyclists, and motorcyclists in LiDAR point cloud data. It processes raw LiDAR scans and outputs 3D bounding boxes for each detected VRU. It is comprehensive implementation of a **LiDAR-based VRU (Vulnerable Road Users) detection system**, combining **rule-based** and **machine learning** approaches to detect pedestrians, cyclists, and motorcyclists from LiDAR point cloud data. Below is a detailed explanation of how the code works:
 
 ### Features
 
 - Efficient processing of LiDAR point cloud data
 - Support for both rule-based and ML-based detection methods
-- Optimized for NVIDIA Jetson Nano deployment
 - Visualization tools for result inspection
 - Evaluation metrics calculation
+- Web app to view sequenced data from generated label files 
 
 ## Getting Started
 
@@ -90,6 +92,7 @@ The rule-based detection uses height, width, and length constraints to identify 
 - **Cyclists**: Taller objects with moderate width and length
 - **Motorcycles**: Moderately tall objects with larger width and length
 
+'''
 VRU Stats determined from helper_config_rule.py:
 human.pedestrian.adult:
   Width  - Min: 0.282, Max: 1.505
@@ -189,8 +192,7 @@ vehicle.bus.bendy:
   Width  - Min: 2.459, Max: 5.113
   Length - Min: 6.771, Max: 21.304
   Height - Min: 2.245, Max: 3.926
-
-
+''' 
 ### Performance Optimization
 
 The system includes several optimizations for Jetson Nano deployment:
