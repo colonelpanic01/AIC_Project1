@@ -1,11 +1,9 @@
 # Western Engineering Automotive Innovation Challenge
-This repository contains a detection and tracking system for Vulnerable Road Users (VRUs) using LiDAR data. The system is to be deployed on a NVIDIA Jetson Nano, yet to be optimized it. 
-It is comprehensive implementation of a **LiDAR-based VRU (Vulnerable Road Users) detection system**, combining **rule-based** and **machine learning** approaches to detect pedestrians, cyclists, and motorcyclists from LiDAR point cloud data. Below is a detailed explanation of how the code works:
-
+This repository contains a detection and tracking system for Vulnerable Road Users (VRUs) using LiDAR data. The system is to be deployed on a NVIDIA Jetson Nano, yet to be optimized. 
 
 ## Overview
 
-The system detects and tracks pedestrians, cyclists, and motorcyclists in LiDAR point cloud data. It processes raw LiDAR scans and outputs 3D bounding boxes for each detected VRU. It is comprehensive implementation of a **LiDAR-based VRU (Vulnerable Road Users) detection system**, combining **rule-based** and **machine learning** approaches to detect pedestrians, cyclists, and motorcyclists from LiDAR point cloud data. Below is a detailed explanation of how the code works:
+The system detects and tracks pedestrians, cyclists, and motorcyclists in LiDAR point cloud data. It processes raw LiDAR scans and outputs 3D bounding boxes for each detected VRU. It is a comprehensive implementation of a **LiDAR-based VRU (Vulnerable Road Users) detection system**, combining rule-based and machine learning approaches to detect pedestrians, cyclists, and motorcyclists from LiDAR point cloud data. Below is a detailed explanation of how the code works:
 
 ### Features
 
@@ -32,7 +30,7 @@ TBD
 The system expects the LiDAR data in the following format:
 
 - **Scan data**: Binary files with 5 columns (X, Y, Z, Intensity, LiDAR Channel)
-- **Label format**: Text files with each line containing (Label Name, X, Y, Z, W, L, H, yaw)
+- **Label format**: Generated after processing the scan data. These text files have each line containing (Label Name, X, Y, Z, W, L, H, yaw)
   - Where X, Y, Z is the center of the 3D bounding box
   - W, L, H are the dimensions of the box
   - yaw is the rotation angle around the Z-axis
